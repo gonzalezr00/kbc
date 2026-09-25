@@ -1,4 +1,4 @@
-# Direct Marketing Optimization — Technical Report
+# Technical Report Direct Marketing Optimization
 
 ## 1. Task and data
 The bank can contact 15% of its client base with one of three offers — consumer loan (CL), credit card (CC), or mutual fund (MF) — and wants to maximize expected revenue. Outcomes (`Sale_*`, `Revenue_*`) are known for 969 of 1,615 clients (60%, the **labeled set**); the remaining 646 (40%, the **targeting set**) are unlabeled and are the clients we select contacts from.
@@ -36,12 +36,9 @@ Before using product-holding features, we confirmed the product snapshot predate
 
 ## 5. Propensity models
 
-**Setup:** for each product, a logistic regression (L2-regularized, standardized features) and a `HistGradientBoostingClassifier` (max depth 3, learning rate 0.05, min leaf 20, L2 regularization) were trained and evaluated with 5-fold stratified cross-validation, averaged over 5 random seeds to
-reduce split-dependent noise. The final propensity score is the **unweighted average of the two
-models' predicted probabilities** ("blend").
+**Setup:** for each product, a logistic regression (L2-regularized, standardized features) and a `HistGradientBoostingClassifier` (max depth 3, learning rate 0.05, min leaf 20, L2 regularization) were trained and evaluated with 5-fold stratified cross-validation, averaged over 5 random seeds to reduce split-dependent noise. The final propensity score is the **unweighted average of the two models' predicted probabilities** ("blend").
 
-**Model selection.** The blend outperformed both individual models on every product, on both AUC
-and top-15% lift, even though individual differences were often within one standard error:
+**Model selection.** The blend outperformed both individual models on every product, on both AUC and top-15% lift, even though individual differences were often within one standard error:
 
 | Product | Model | AUC (mean ± std) | Lift @ 15% (mean ± std) |
 |---|---|---|---|
@@ -55,26 +52,15 @@ and top-15% lift, even though individual differences were often within one stand
 | CL | hgb | 0.633 ± 0.005 | 1.968 ± 0.066 |
 | CL | **blend** | **0.651 ± 0.003** | **2.028 ± 0.081** |
 
-Base rates: MF 19.9%, CC 25.0%, CL 29.9%. With 969 labeled clients and 184–290 positives per
-product, AUC differences below ~0.02 are not reliably distinguishable — the blend was chosen
-because it won consistently across all three products and both metrics, not because any single
-comparison was individually significant.
+Base rates: MF 19.9%, CC 25.0%, CL 29.9%. With 969 labeled clients and 184–290 positives per product, AUC differences below ~0.02 are not reliably distinguishable — the blend was chosen because it won consistently across all three products and both metrics, not because any single comparison was individually significant.
 
 ## 6. Calibration
-Because expected revenue is `P(buy) × E[Revenue | buy]`, calibration of the propensity scores
-matters more than ranking quality alone. Out-of-fold blend predictions were checked against
-observed rates in 5 quantile bins per product, plus an overall calibration slope:
+Because expected revenue is `P(buy) × E[Revenue | buy]`, calibration of the propensity scores matters more than ranking quality alone. Out-of-fold blend predictions were checked against observed rates in 5 quantile bins per product, plus an overall calibration slope:
 
-- **Mean predicted probability matched the base rate exactly** for all three products (e.g., CL:
-  0.297 predicted vs. 0.299 observed) — the most important calibration check.
-- Calibration slopes (0.80–0.86) were within ~1 standard error of 1 and not reliably different from
-  perfect calibration given the sample size.
-- **The top quintile — the only region that matters for contact selection — was well calibrated in
-  all three products** (e.g., CL: 0.527 predicted vs. 0.552 observed).
-- Under-prediction appeared in the bottom quintile of all three products, consistently enough to be
-  a real (if minor) pattern. Since this range is never contacted, no recalibration was applied:
-  Platt scaling would have improved the unused bottom range at the cost of the well-calibrated top
-  range.
+- **Mean predicted probability matched the base rate exactly** for all three products (e.g., CL: 0.297 predicted vs. 0.299 observed) — the most important calibration check.
+- Calibration slopes (0.80–0.86) were within ~1 standard error of 1 and not reliably different from perfect calibration given the sample size.
+- **The top quintile — the only region that matters for contact selection — was well calibrated in all three products** (e.g., CL: 0.527 predicted vs. 0.552 observed).
+- Under-prediction appeared in the bottom quintile of all three products, consistently enough to be a real (if minor) pattern. Since this range is never contacted, no recalibration was applied: Platt scaling would have improved the unused bottom range at the cost of the well-calibrated top range.
 
 ## 7. Revenue modeling
 Revenue is 0 for all non-buyers and strictly positive for buyers, so a two-part model was used:
@@ -86,15 +72,9 @@ Revenue is 0 for all non-buyers and strictly positive for buyers, so a two-part 
 | CC | 10.9 | 4.4 | 54% |
 | CL | 12.0 | 10.7 | 15% |
 
-Revenue among buyers was tested for predictability from client features (Spearman correlation,
-log1p-transformed revenue regression). The strongest correlation found was 0.18 (CL vs.
-current-account balance) — not distinguishable from noise given 79–290 buyers and the number of
-features tested. **A flat mean per product was used** rather than a fitted revenue model.
+Revenue among buyers was tested for predictability from client features (Spearman correlation, log1p-transformed revenue regression). The strongest correlation found was 0.18 (CL vs. current-account balance) — not distinguishable from noise given 79–290 buyers and the number of features tested. **A flat mean per product was used** rather than a fitted revenue model.
 
-**Sensitivity check (winsorization):** buyer revenues were capped at the 99th percentile
-(MF 9.7→8.9, CC 10.9→9.5, CL 12.0→11.6) and the full pipeline re-run. The offer mix shifted
-slightly (CC contacts 27→16) but realized back-test revenue was materially unchanged (paired
-bootstrap: median +18, 95% CI [-28, +100]), confirming the strategy is not overly sensitive to a handful of high-revenue outliers.
+**Sensitivity check (winsorization):** buyer revenues were capped at the 99th percentile (MF 9.7→8.9, CC 10.9→9.5, CL 12.0→11.6) and the full pipeline re-run. The offer mix shifted slightly (CC contacts 27→16) but realized back-test revenue was materially unchanged (paired bootstrap: median +18, 95% CI [-28, +100]), confirming the strategy is not overly sensitive to a handful of high-revenue outliers.
 
 ## 8. Targeting strategy and validation
 
