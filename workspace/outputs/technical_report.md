@@ -5,6 +5,12 @@ The bank can contact 15% of its client base with one of three offers, consumer l
 
 Four source tables were joined on `Client`: socio-demographics, product holdings and balances, inflow/outflow (flows), and sales/revenues (labeled clients only).
 
+![Distributions](./figures/key_distributions.png){width=50%}
+
+
+![Class Balance](./figures/class_balance.png){width=35%}
+
+
 ## 2. Data quality and missing values
 
 | Table | Missingness | Diagnosis | Treatment |
@@ -20,6 +26,9 @@ Four source tables were joined on `Client`: socio-demographics, product holdings
 - Product ownership was starkly different: **0% held a savings account, overdraft, credit card, or consumer loan**, versus 26–27% (SA, OVD) and 8–11% (CC, CL) in the rest of the base. Under a null hypothesis of no difference, this pattern has roughly a 1-in-5,000 probability by chance.
 - Sale rates among the 18 labeled clients in this group were lower for MF (0/18) and CL (1/18) than the base rates (~20%, ~30%), though the sample is too small to draw a firm conclusion alone.
 
+![Ownership](./figures/ownership_no_flow_gap.png){width=35%} # revise this
+
+
 **Conclusion:** this is a group of mono-product, low-engagement clients rather than a data extraction failure, so flow variables were filled with **0** rather than the median. A median-fill run was tested as a sensitivity check and produced materially the same cross-validated model performance.
 
 ## 3. Feature engineering
@@ -33,6 +42,9 @@ Implemented in `src/features.py` as a `FlowImputer` (fit only on training folds)
 
 ## 4. Leakage check
 Before using product-holding features, we confirmed the product snapshot predates the sales: sales occur among both existing owners and non-owners of each product (261 of 890 CL sales are among non-owners, and product ownership does not track perfectly with the sale label). This rules out the snapshot being taken after the sale, and confirms owners should remain eligible for offers rather than being excluded a priori.
+
+![Revenue Distr](./figures/revenue_distributions.png){width=35%}
+
 
 ## 5. Propensity models
 
@@ -54,6 +66,8 @@ Before using product-holding features, we confirmed the product snapshot predate
 
 Base rates: MF 19.9%, CC 25.0%, CL 29.9%. With 969 labeled clients and 184–290 positives per product, AUC differences below ~0.02 are not reliably distinguishable, the blend was chosen because it won consistently across all three products and both metrics, not because any single comparison was individually significant.
 
+
+
 ## 6. Calibration
 Because expected revenue is `P(buy) × E[Revenue | buy]`, calibration of the propensity scores matters more than ranking quality alone. Out-of-fold blend predictions were checked against observed rates in 5 quantile bins per product, plus an overall calibration slope:
 
@@ -61,6 +75,8 @@ Because expected revenue is `P(buy) × E[Revenue | buy]`, calibration of the pro
 - Calibration slopes (0.80–0.86) were within ~1 standard error of 1 and not reliably different from perfect calibration given the sample size.
 - **The top quintile was well calibrated in all three products** (CL: 0.527 predicted vs. 0.552 observed).
 - Under-prediction appeared in the bottom quintile of all three products, consistently enough to be a real (if minor) pattern. Since this range is never contacted, no recalibration was applied: Platt scaling would have improved the unused bottom range at the cost of the well-calibrated top range.
+
+![Calibration](./figures/calibration.png){width=35%}
 
 ## 7. Revenue modeling
 Revenue is 0 for all non-buyers and strictly positive for buyers, so a two-part model was used:
@@ -104,7 +120,10 @@ Model-expected revenue for the selected 145 was 1,005.2 vs. 959.8 realized (−4
 
 The CI for CL-only vs. the full mix narrowly includes zero. **Decision:** retain the full three-product optimizer as the primary strategy as it is the method the task specifies, treats all three products consistently, and the CL-only advantage rests on a small, plausibly noisy sample of CC outcomes, but report CL-only as a documented, lower-variance alternative.
 
-**Value of the strategy vs. the honest baseline:** strategy minus "random clients, all offered CL" has a 95% CI of **[281, 654]**, which **excludes zero**, this is the strongest evidence that the propensity models add real value beyond simply offering the "highest average revenue" product to everyone.
+**Value of the strategy vs. the honest baseline:** strategy minus "random clients, all offered CL" has a 95% CI of **[281, 654]**, which **excludes zero**, this is the strongest evidence that the propensity models add real value beyond simply offering the "highest average revenue" product to everyone.s
+
+![Strat](./figures/strategy_ablation.png){width=35%}
+
 
 ## 9. Final targeting list
 The blended models were refit on all 969 labeled clients and applied to the 646 targeting clients. Mean predicted probabilities on the targeting set matched the labeled base rates almost exactly (CL: 0.302 vs. 0.299), confirming the two populations are comparable.
@@ -131,6 +150,9 @@ Group-wise permutation importance (5-fold CV, AUC drop, feature groups: demograp
 
 An age-band vs. "age at account opening" decomposition for CL found both bands show a similarly elevated sale rate (≤25 years old: 47%; joined ≤18 years old: 49%, vs. a 30% base rate), so the effect is described as "young, long-tenured clients" rather than attributed to a specific joining-age segment, since the two variables are collinear and cannot be separated with this data.
 
+![Feature Importance](./figures/feature_importance.png){width=35%}
+
+
 ## 11. Assumptions and limitations
 - Historical `Sale_*` labels are treated as a proxy for response to a future offer, there is no treatment/control indicator in the data, forcing a propensity model nature, not a causal uplift model.
 - Revenue means are estimated on the same 969 labeled clients used for back-testing, so both the revenue estimates and the back-test carry a small optimistic bias.
@@ -142,7 +164,7 @@ An age-band vs. "age at account opening" decomposition for CL found both bands s
 
 - **Python:** 3.x (pinned versions in `requirements.txt`)
 - **Key packages:** pandas, numpy, scikit-learn (`LogisticRegression`, `HistGradientBoostingClassifier`), scipy
-- **Random seeds:** CV results averaged over 5 seeds (0–4); `StratifiedKFold(shuffle=True, random_state=seed)`
+- **Random seeds:** CV results averaged over 5 seeds (0–4) `StratifiedKFold(shuffle=True, random_state=seed)`
 - **CV scheme:** 5-fold stratified cross-validation on the 969 labeled clients, repeated per seed, no additional hyperparameter tuning beyond what's specified in `src/models.py`
 - **Final models:** refit on 100% of the labeled set using the same fixed hyperparameters used during CV
 - **To reproduce:** `pip install -r requirements.txt`, then run the notebooks/scripts in the order listed above
