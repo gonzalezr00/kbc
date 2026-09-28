@@ -52,7 +52,7 @@ def plot_offer_mix(out):
         colors=colors,
         startangle=90,
     )
-    ax.set_title("Offer mix — 97 contacted clients")
+    ax.set_title("Offer mix (97 contacted clients)")
     _save(fig, "offer_mix")
 
 
@@ -89,7 +89,7 @@ def plot_key_distributions(master):
         color="#607D8B",
     )
     axes[2].set_title("Current-account balance (signed log)")
-    fig.suptitle("Key distributions — full client base (n=1,615)")
+    fig.suptitle("Key distributions (full client base, n=1,615)")
     _save(fig, "key_distributions")
 
 
@@ -104,7 +104,7 @@ def plot_product_ownership(master):
     ax.bar(x + 0.2, gap_rate, width=0.4, label="No flow data (n=28)", color="#DD8452")
     ax.set_xticks(x, [f.replace("has_", "") for f in flags])
     ax.set_ylabel("Ownership rate")
-    ax.set_title("Product ownership: full base vs. no-flow-data clients")
+    ax.set_title("Product ownership (full base vs. no-flow-data clients)")
     ax.legend()
     _save(fig, "ownership_no_flow_gap")
 
@@ -133,7 +133,7 @@ def plot_revenue_distributions(lab, PRODUCTS):
         )
         ax.set_title(f"{p} revenue (buyers only)")
         ax.legend(fontsize=8)
-    fig.suptitle("Revenue distributions — buyers only, note the right tail")
+    fig.suptitle("Revenue distributions (buyers only)")
     _save(fig, "revenue_distributions")
 
 
@@ -153,7 +153,7 @@ def plot_calibration(oof, lab, PRODUCTS):
         ax.set_ylabel("Observed rate")
         ax.set_title(p)
         ax.legend(fontsize=8)
-    fig.suptitle("Calibration — out-of-fold blend predictions, 5 bins")
+    fig.suptitle("Calibration (oof blend predictions, 5 bins)")
     _save(fig, "calibration")
 
 
@@ -174,7 +174,7 @@ def plot_strategy_ablation():
     bars = ax.bar(labels, vals, color=["#2E7D32", "#66BB6A", "#A5D6A7"])
     ax.bar_label(bars, fmt="%.0f")
     ax.set_ylabel("Realized revenue (145 contacts)")
-    ax.set_title("Strategy ablation — back-test on labeled data")
+    ax.set_title("Strategy ablation")
     _save(fig, "strategy_ablation")
 
 
