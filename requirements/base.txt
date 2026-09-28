@@ -17,3 +17,7 @@ openpyxl
 
 # UI
 streamlit
+
+# google's tabfm
+tabfm[pytorch]
+safetensors>=0.4.3
